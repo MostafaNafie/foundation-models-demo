@@ -36,29 +36,22 @@ struct ChatScreen: View {
 
 private extension ChatScreen {
     func messageListView() -> some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(viewModel.messages) { message in
-                        MessageBubbleView(message: message)
-                            .id(message.id)
-                    }
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(viewModel.messages) { message in
+                    MessageBubbleView(message: message)
+                        .id(message.id)
+                }
 
-                    if viewModel.isProcessing {
-                        TypingIndicatorView()
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
-            .onChange(of: viewModel.messages.count) {
-                if let lastMessage = viewModel.messages.last {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                    }
+                if viewModel.isProcessing {
+                    TypingIndicatorView()
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
+        .animation(.easeOut(duration: 0.3), value: viewModel.messages.count)
+        .scrollPosition(id: .constant(viewModel.messages.last?.id), anchor: .bottom)
     }
 }
 
