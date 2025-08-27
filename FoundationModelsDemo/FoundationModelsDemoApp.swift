@@ -11,7 +11,7 @@ import SwiftUI
 struct FoundationModelsDemoApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ChatScreen()
         }
     }
 }
