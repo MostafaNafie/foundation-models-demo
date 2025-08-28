@@ -31,9 +31,9 @@ private extension ChatViewModel {
     func checkModelAvailability() {
         switch model.availability {
             case .available:
-                messages.append(ChatMessage(text: "Hello! I'm ready to chat with you.", isFromUser: false))
+                messages.append(ChatMessage(text: "Hello! I'm ready to chat with you."))
             case .unavailable(let reason):
-                messages.append(ChatMessage(text: unavailableMessage(reason), isFromUser: false))
+                messages.append(ChatMessage(text: unavailableMessage(reason)))
         }
     }
 
@@ -49,29 +49,29 @@ private extension ChatViewModel {
         if case .available = model.availability {
             generateResponse(for: currentMessage)
         } else {
-            messages.append(ChatMessage(text: "I'm not available right now. Please check your Apple Intelligence settings.", isFromUser: false))
+            messages.append(ChatMessage(text: "I'm not available right now. Please check your Apple Intelligence settings."))
         }
     }
 
     func generateResponse(for input: String) {
         isProcessing = true
-        messages.append(ChatMessage(text: "Sorry, I encountered an error. Please try again.", isFromUser: false))
-        //        Task {
-        //            do {
-        //                let prompt = "You are a helpful AI assistant. Please respond to this message: \(input)"
-        //                let response = try await model.generate(prompt: prompt)
-        //
-        //                await MainActor.run {
-        //                    isProcessing = false
-        //                    messages.append(ChatMessage(text: response, isFromUser: false))
-        //                }
-        //            } catch {
-        //                await MainActor.run {
-        //                    isProcessing = false
-        //                    messages.append(ChatMessage(text: "Sorry, I encountered an error. Please try again.", isFromUser: false))
-        //                }
-        //            }
-        //        }
+        Task {
+            do {
+                let prompt = "You are a helpful AI assistant. Please respond to this message: \(input)"
+                let session = LanguageModelSession()
+                let response = try await session.respond(to: prompt)
+
+                await MainActor.run {
+                    isProcessing = false
+                    messages.append(ChatMessage(text: response.content))
+                }
+            } catch {
+                await MainActor.run {
+                    isProcessing = false
+                    messages.append(ChatMessage(text: "Sorry, I encountered an error. Please try again."))
+                }
+            }
+        }
     }
 
     func unavailableMessage(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
