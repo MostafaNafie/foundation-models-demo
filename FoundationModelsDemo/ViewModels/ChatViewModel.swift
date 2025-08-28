@@ -57,8 +57,25 @@ private extension ChatViewModel {
         isProcessing = true
         Task {
             do {
+                // Convert FAQ items into a prompt
+                let faqText = faqs
+                    .enumerated()
+                    .map { index, faq in
+                        "\(index+1). Q: \(faq.question)\n   A: \(faq.answer)"
+                    }
+                    .joined(separator: "\n\n")
+
+                let instructions = """
+                           You are a helpful FAQ assistant. Here is a list of FAQs:
+                           
+                           \(faqText)
+                           
+                           Based on the user’s question below, choose the most relevant answer from the FAQ list. 
+                           If no FAQ is relevant, respond with: "Sorry, I don’t know the answer to that, you can call our customer service at 1-800-123-4567 for further assistance."
+                           """
+
                 let prompt = "You are a helpful AI assistant. Please respond to this message: \(input)"
-                let session = LanguageModelSession()
+                let session = LanguageModelSession(instructions: instructions)
                 let response = try await session.respond(to: prompt)
 
                 await MainActor.run {
