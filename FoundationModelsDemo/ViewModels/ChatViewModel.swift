@@ -7,14 +7,13 @@
 
 import Combine
 import Foundation
-import FoundationModels
 
 class ChatViewModel: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var messageText = ""
     @Published var isProcessing = false
 
-    private let model = SystemLanguageModel.default
+    private let foundationModelsManager = FoundationModelsManager()
 
     @MainActor
     func onAppear() {
@@ -29,12 +28,8 @@ class ChatViewModel: ObservableObject {
 
 private extension ChatViewModel {
     func checkModelAvailability() {
-        switch model.availability {
-            case .available:
-                messages.append(ChatMessage(text: "Hello! I'm ready to chat with you."))
-            case .unavailable(let reason):
-                messages.append(ChatMessage(text: unavailableMessage(reason)))
-        }
+        let availability = foundationModelsManager.checkModelAvailability()
+        messages.append(ChatMessage(text: availability.message))
     }
 
     func handleMessageSent() {
@@ -46,7 +41,7 @@ private extension ChatViewModel {
         let currentMessage = messageText
         messageText = ""
 
-        if case .available = model.availability {
+        if foundationModelsManager.isModelAvailable {
             generateResponse(for: currentMessage)
         } else {
             messages.append(ChatMessage(text: "I'm not available right now. Please check your Apple Intelligence settings."))
@@ -57,30 +52,11 @@ private extension ChatViewModel {
         isProcessing = true
         Task {
             do {
-                // Convert FAQ items into a prompt
-                let faqText = faqs
-                    .enumerated()
-                    .map { index, faq in
-                        "\(index+1). Q: \(faq.question)\n   A: \(faq.answer)"
-                    }
-                    .joined(separator: "\n\n")
-
-                let instructions = """
-                           You are a helpful FAQ assistant. Here is a list of FAQs:
-                           
-                           \(faqText)
-                           
-                           Based on the user’s question below, choose the most relevant answer from the FAQ list. 
-                           If no FAQ is relevant, respond with: "Sorry, I don’t know the answer to that, you can call our customer service at 1-800-123-4567 for further assistance."
-                           """
-
-                let prompt = "You are a helpful AI assistant. Please respond to this message: \(input)"
-                let session = LanguageModelSession(instructions: instructions)
-                let response = try await session.respond(to: prompt)
-
+                let response = try await foundationModelsManager.generateResponse(for: input)
+                
                 await MainActor.run {
                     isProcessing = false
-                    messages.append(ChatMessage(text: response.content))
+                    messages.append(ChatMessage(text: response))
                 }
             } catch {
                 await MainActor.run {
@@ -88,19 +64,6 @@ private extension ChatViewModel {
                     messages.append(ChatMessage(text: "Sorry, I encountered an error. Please try again."))
                 }
             }
-        }
-    }
-
-    func unavailableMessage(_ reason: SystemLanguageModel.Availability.UnavailableReason) -> String {
-        switch reason {
-            case .deviceNotEligible:
-                return "The device is not eligible for using Apple Intelligence."
-            case .appleIntelligenceNotEnabled:
-                return "Apple Intelligence is not enabled. Please enable it in Settings."
-            case .modelNotReady:
-                return "The model isn't ready because it's downloading or because of other system reasons."
-            @unknown default:
-                return "The model is unavailable for an unknown reason."
         }
     }
 }
