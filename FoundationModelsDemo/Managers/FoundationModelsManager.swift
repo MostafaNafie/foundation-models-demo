@@ -9,7 +9,6 @@ import FoundationModels
 
 final class FoundationModelsManager {
     private let model = SystemLanguageModel.default
-    private lazy var session = setupSession()
 
     var isModelAvailable: Bool {
         model.availability == .available
@@ -25,7 +24,6 @@ final class FoundationModelsManager {
     }
     
     func generateResponse(for input: String) async throws -> String {
-//        let prompt = "You are a helpful AI assistant. Please respond to this message: \(input)"
         let options = GenerationOptions(
             sampling: .greedy,
             temperature: 0.0
@@ -37,23 +35,14 @@ final class FoundationModelsManager {
 
 private extension FoundationModelsManager {
     func setupSession() -> LanguageModelSession {
-        // Convert FAQ items into a prompt
-        let faqText = faqs
-            .enumerated()
-            .map { index, faq in
-                "\(index+1). Q: \(faq.question)\n   A: \(faq.answer)"
-            }
-            .joined(separator: "\n\n")
-
         let instructions = """
-                                 
                    
                     if the question is not exactly as you expect but delivers the same meaning, it's okay, you can answer with the bullet points you have. 
 
                     You are a helpful AI assistant. Use the following information to answer user questions:
-                   - we work at Yassir
-                   - the return policy is within 30 days
-                   - we ship worldwide.
+                   - We work at Yassir
+                   - The return policy is within 30 days
+                   - We ship worldwide.
                    - To reset password: Go to Settings → Account → Reset Password
                    - We provide a range of technology solutions including software development, IT consulting, cloud services, and hardware support
                    - You can reach us via email (support@yassir.com), phone (1-800-123-4567), or live chat, with support hours from 9 AM – 6 PM, Mon–Fri
@@ -76,7 +65,7 @@ private extension FoundationModelsManager {
                    - Scalable enterprise solutions are available with dedicated account managers
                    - Job applications can be submitted directly through our Careers page
                    
-                   each bullet point is a separate point for a separate question.
+                   Each bullet point is a separate answer for a separate question.
                                       
                    """
 
