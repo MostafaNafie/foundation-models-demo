@@ -13,7 +13,7 @@ struct ChatMessage: Identifiable, Equatable {
     let isFromUser: Bool
     let timestamp: Date
     
-    init(text: String, isFromUser: Bool) {
+    init(text: String, isFromUser: Bool = false) {
         self.text = text
         self.isFromUser = isFromUser
         self.timestamp = Date()
